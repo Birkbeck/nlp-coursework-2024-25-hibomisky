@@ -25,6 +25,27 @@ def fk_level(text, d):
     """
 
 
+    data = [] #this is where we will store the data from the novels
+
+    novel_directory = Path(novels).glob("*.txt")
+    #this is a list of all the novels in the directorypython3 -m venv .venv
+
+    for filename in novel_directory:
+        if filename.endswith(".txt"):
+            parts = filename.split("_").repace(".txt", "")
+            title, author, year = parts[0], parts[1], parts[2]
+
+            with open(os.path.join(novel_directory, filename), "r", encoding="utf-8") as file:
+                text = file.read()
+                data.append({"title": title, "author": author, "year": year, "text": text})
+    df = pd.DataFrame(data) 
+
+    df = df.sort_values("year").reset_index(drop=True) 
+    #this will sort the dataframe by year and reset the index
+    #we need to reset the index because we will be adding new columns to the dataframe later
+
+    print(df)
+
     pass
 
 
@@ -42,6 +63,8 @@ def count_syl(word, d):
     #calcuate the voalbulary diversity in the novels
     #token = total words / unique words
     #type = unique words / total words
+
+
 
     
 
