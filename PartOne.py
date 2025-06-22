@@ -12,8 +12,6 @@ nlp.max_length = 2000000
 import pandas as pd
 import os
 
-
-
 def fk_level(text, d):
     """Returns the Flesch-Kincaid Grade Level of a text (higher grade is more difficult).
     Requires a dictionary of syllables per word.
@@ -25,35 +23,7 @@ def fk_level(text, d):
     Returns:
         float: The Flesch-Kincaid Grade Level of the text. (higher grade is more difficult)
     """
-  
-    data = [] #this is where the novel data will be stored
 
-    novels_directory = [f for f in os.listdir(path) if f.endswith(".txt")]
-    # this is so we can get the list of novels in the directory
-    novels_directory = Path(path) / "novels"
-    
-    for filename in novels_directory
-        if filename.endswith(".txt"):
-                parts = filename.replace(".txt", "").split("_")
-                #this is so we can remove .txt and seperate the title, author, and year
-
-                title, author, year = parts[0], parts[1], parts[2]
-                #this is so we can extract the title, author, and year from the filename
-
-                # Read the novel file so we can read the text file and store it in the data list
-                with open(file_path, "r", encoding="utf-8") as file:
-                    text = file.read() #this bit is genrated by copilot 
-           
-                data.append({
-                    "title": title,  
-                    "text": text,
-                    "author": author,  
-                    "year": year 
-                })
-    df = pd.DataFrame(data)
-    # this turns the data list into a DataFrame
-
-    return df
 
     pass
 
@@ -69,6 +39,14 @@ def count_syl(word, d):
     Returns:
         int: The number of syllables in the word.
     """
+    #calcuate the voalbulary diversity in the novels
+    #token = total words / unique words
+    #type = unique words / total words
+
+    
+
+
+
     pass
 
 
