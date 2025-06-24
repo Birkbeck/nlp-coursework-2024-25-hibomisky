@@ -5,12 +5,15 @@
 import nltk
 import spacy
 from pathlib import Path
-
-nlp = spacy.load("en_core_web_sm")
-nlp.max_length = 2000000
-
 import pandas as pd
 import os
+import pickle
+import math
+
+nlp = spacy.load("en_core_web_sm")
+nlp.max_length = 2000000 #cos the novels are long
+
+
 
 def read_novels(path=Path.cwd() / "texts" / "novels"):
     """Reads texts from a directory of .txt files and returns a DataFrame with the text, title,
@@ -20,13 +23,16 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
     for file_path in path.glob("*.txt"):  # only care about .txt files
         if file_path.suffix == ".txt":
             filename_parts = file_path.stem.split("_")  # remove the .txt part of the filename
+            #split filename with - like the way the filenames are
 
             year = int(filename_parts[-1])  # year is the number at the end of the filename
 
-            author = filename_parts[-2]  # author is the second to last part of the filename
-
-            title = "-".join(filename_parts[1:])  # title is whatever is left in the filename
-
+            author = filename_parts[-2]  # author is the second to last part
+            # this is to get the author name, which is the second to last part of the filename
+            #title is allowed to have - 
+            title = "-".join(filename_parts[:-2])  # title is whatever is left in the filename
+            # this is to join the rest of the filename parts with - to get the title
+            
             # open and read the text file in the novel folder
             with open(file_path, "r", encoding="utf-8") as f:
                 text = f.read()
@@ -37,7 +43,7 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
                 "year": year,
                 "text": text
             })
-    # end of loop, make a pandas dataframe       
+    # this is the end of the loop + make a pandas dataframe       
     df = pd.DataFrame(novels_data)
     df.sort_values(by="year", inplace=True)  # sort the dataframe by year
     df.reset_index(drop=True, inplace=True)  # reset the index of the dataframe/delete old index
@@ -56,28 +62,29 @@ def count_syl(word, d):
         int: The number of syllables in the word.
     """
     # check if the word is in the dictionary
+    word = word.lower() make it lowercase
+    
     if word in d:
-        try:
-            return len([p in p in d[word][0] if p[-1].isdigit()])  # count the number of syllables in the word
+        try: #this is for error handling for words not in the dictionary
+            return len([p for p in d[word][0] if p[-1].isdigit()])  # count the number of syllables in the word
         except KeyError:
             pass
     vowels = "aeiouy"  # define the vowels
     syllable_count = 0
 
     #if the words starts with a vowel, add one to the syllable count
-    if word[0].lower() in vowels:
+    if word and word[0] in vowels:
         syllable_count += 1
 
     #this is to doublecheck that the word is not empty and it has more than one letter
     for i in range(1, len(word)):
         #if the current letter is a vowel & the previous letter is not a vowel+ add one to the syllable count
-        if word[i].lower() in vowels and word[i - 1].lower() not in vowels:
+        if word[i].lower() in vowels and word[i -1] not in vowels:
             syllable_count += 1
-        if word.endswith("e"):
-            syllable_count -= 1
         
         if syllable_count == 0:
             syllable_count = 1
+   
     return syllable_count  # return the syllable count for the word
     
 def fk_level(text, d):
@@ -92,9 +99,15 @@ def fk_level(text, d):
         float: The Flesch-Kincaid Grade Level of the text. (higher grade is more difficult)
     """
     #use NLTK word tokenizer to tokenize the text
+    
+    sentences = nltk.sent_tokenize(text)  # tokenize the text into sentences
+    total_sentences = len(sentences)  # total number of sentences in the text
+    
+    #now use the NLTK tokeniser to tokenize the text into words
     words = [word for word in nltk.word_tokenize(text) if word.isalpha()]  # only keep words that are letters
     total_words = len(words)  # total number of words in the text
 
+    #count the number of syllables in each word using the count_syl function
     total_syllables = 0  # total number of syllables in the text
     for word in words:
         total_syllables += count_syl(word, d) #loop each word + use count_syl 
@@ -109,26 +122,41 @@ def fk_level(text, d):
     return fk_score  # return the Flesch-Kincaid Grade Level of the text
 
 
-    pass
-
-
 def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
     """Parses the text of a DataFrame using spaCy, stores the parsed docs as a column and writes 
     the resulting  DataFrame to a pickle file"""
 
     #save pickle file or make a new one
+    if not store_path.exists():
+        store_path.mkdir(parents=True) # create the directory if it doesn't exist (copilot)
 
+    parsed_docs = []  # empty list to store all the parsed docs
 
-    pass
+    for text in nlp.pipe(df[text].tolist(), batch_size=1000, n_process=-1):
+        parsed_docs.append(text):
+            disable = ["ner"]
+    # end of loop, add the parsed docs to the dataframe
+    parsed_docs.append(text) #doc now has the parsed text
+
+    df['parsed'] = parsed_docs  # add the parsed docs to the dataframe
+
+    #now savethe dataframe to a pickle file
+    with open(output_file_path, "wb") as f:
+        pickle.dump(df, f) #should see a df in the pickle file
+
+        return df  # return the dataframe with the parsed + saved docs
+
 
 
 def nltk_ttr(text):
     """Calculates the type-token ratio of a text. Text is tokenized using nltk.word_tokenize."""
 
-    text = text.lower()  # convert text to lowercase
+    text = text.lower()  # convert text to lowercase letters cos coursework says ignore the case
 
     tokens = nltk.word_tokenize(text)  # tokenize the text
 
+    #no words = TTR = 0
+    words = [token for token in tokens if token.isalpha()]  # this is to keep only words (ignore punctuation and numbers)
     if not words:
         return 0.0
     
@@ -139,9 +167,8 @@ def nltk_ttr(text):
     return total_types / total_tokens  # return the type-token ratio (TTR) of the text
 
 
+        #need to define words and total_sentences
 
-
-    pass
 
 
 def get_ttrs(df):
@@ -163,19 +190,45 @@ def get_fks(df):
 
 def subjects_by_verb_pmi(doc, target_verb):
     """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
+    
+    subject_verb_cooccurrences = Counter()
+    #extract most common subjects of given verb in parsed doc + return it in list as per hint
+
+    for token in doc:
+        if token.lemma_ == verb_lemma:
+            for child in token.children:
+                if child.dep_ == "nsubj":
+                    subject_verb_cooccurrences[child.lemma_.lower()] += 1
+                    #this adds up the number of times a subject appears with the verb
+    all subject_counts = Counter 
     pass
 
 
 
 def subjects_by_verb_count(doc, verb):
     """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
+    for token in doc:
+        if token.lemma_ == verb_lemma
+        #for every token in the doc, check if token = verb
+        for child in token.children:
+            if child.dep_ == "nsubj": #then its a subject of verb
+                #if the child is a subject of the verb, add it to the list of subjects
+                subjects.append(child.lemma_.lower())
+    
+    return Counter(subjects).most_common(10)  # this will return the top 10 common subjects for the verb
+    
+    
     pass
 
 
 
 def adjective_counts(doc):
     """Extracts the most common adjectives in a parsed document. Returns a list of tuples."""
-    pass
+    adjectives = [token.lemma.lower() for token in doc if token.pos_ == "ADJ"]
+
+    return Counter(adjectives).most_common(10)  # return the top 10 common adjectives
+
+
 
 
 
