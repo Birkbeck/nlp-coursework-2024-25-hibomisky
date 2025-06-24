@@ -132,16 +132,15 @@ def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
 
     parsed_docs = []  # empty list to store all the parsed docs
 
-    for text in nlp.pipe(df[text].tolist(), batch_size=1000, n_process=-1):
-        parsed_docs.append(text):
-            disable = ["ner"]
+    for text in nlp.pipe(df['text'].tolist(), disable = ["ner"]):
     # end of loop, add the parsed docs to the dataframe
-    parsed_docs.append(text) #doc now has the parsed text
+        parsed_docs.append(doc) #doc now has the parsed text
 
     df['parsed'] = parsed_docs  # add the parsed docs to the dataframe
-
+    #say what the output file path is
+    output_file_path = store_path / out_name  # this is where to find the output_file
     #now savethe dataframe to a pickle file
-    with open(output_file_path, "wb") as f:
+    with open(output_file_path, "wb") as f: #this opens file 
         pickle.dump(df, f) #should see a df in the pickle file
 
         return df  # return the dataframe with the parsed + saved docs
@@ -182,8 +181,8 @@ def get_ttrs(df):
 def get_fks(df):
     """helper function to add fk scores to a dataframe"""
     results = {}
-    cmudict = nltk.corpus.cmudict.dict()
-    for i, row in df.iterrows():
+    cmudict = nltk.corpus.cmudict.dict() #this is cmu dictionary from nltk
+    for _, row in df.iterrows():
         results[row["title"]] = round(fk_level(row["text"], cmudict), 4)
     return results
 
@@ -192,17 +191,24 @@ def subjects_by_verb_pmi(doc, target_verb):
     """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
     
     subject_verb_cooccurrences = Counter()
-    #extract most common subjects of given verb in parsed doc + return it in list as per hint
+    #make a list 
+    subjects = [] #this is to store the subjects found with the verb
 
-    for token in doc:
+    #now loop all tokens in the parsed document
+    for token in doc: #tokem lemma similar to the word
         if token.lemma_ == verb_lemma:
             for child in token.children:
-                if child.dep_ == "nsubj":
-                    subject_verb_cooccurrences[child.lemma_.lower()] += 1
+                if child.dep_ == "nsubj": #are the children in dependancy tree of the verb
+                    subject.append(child.lemma_.lower())  # adds subject to the list
                     #this adds up the number of times a subject appears with the verb
-    all subject_counts = Counter 
-    pass
+    return Counter(subjects).most_common(10)  # count top 10 subjects for the verb after running loop
 
+
+def object_count(doc): #for question 1f
+    #to find the most common objecys in parsed spacy doc
+    objects = [token.lemma_.lower() for token in doc if token.dep_ == "doc_obj"]
+
+    return Counter(objects).most_common(10)  # this is top 10 common objects in the doc
 
 
 def subjects_by_verb_count(doc, verb):
