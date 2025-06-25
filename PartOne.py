@@ -219,36 +219,46 @@ def subjects_by_verb_count(doc, verb): #moved fuction up for my own thinking cos
 
 def subjects_by_verb_pmi(doc, target_verb): 
     """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
-    
- 
-
-
-
-def subjects_by_verb_count(doc, verb):
-    """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
+    #first count total times subjects appears with target verb in doc
+    subjects_verb_cooccrances = Counter()
     for token in doc:
-        if token.lemma_ == verb_lemma:
-        #for every token in the doc, check if token = verb
+        if token.lemma_ == target_verb:
+            #for every token in the doc, check if token = verb
             for child in token.children:
-                if child.dep_ == "nsubj": #then its a subject of verb
-                #if the child is a subject of the verb, add it to the list of subjects
-                    subjects.append(child.lemma_.lower())
+                if child.dep_ == "nsubj":
+                    subjects_verb_cooccrances[child.lemma_.lower()] += 1
+                    #so that the child is subject of the verb + add to list of subjects
     
-    return Counter(subjects).most_common(10)  # this will return the top 10 common subjects for the verb
-    
-    
-    pass
+    #second: get counts for all subject for any verb in the doc
+    all_subject_counts = Counter(token.lemma_.lower() for token in doc if token.dep_ == "nsubj")
 
+    #then count total times the target verb appears in the doc
+    total_verb_subject_count = sum(subjects_verb_cooccrances.values())
 
+    #X = total number of subjects in the doc
+    X = sum(all_subject_counts.values())
+
+    if X == 0 or total_verb_subject_count == 0:
+        return []
+    
+    #now calcuate pmi scores for each subject
+    pmi_scores = {}
+
+    for subject, count in subjects_verb_cooccrances.items():
+
+        pmi = math.log2((count_subjects_verb_cooccrances[subject] * X) / (count * total_verb_subject_count))
+        #this is to calculate the pmi score for each subject
+        pmi_scores[subject] = pmi  # copitlot helped me wth line 249 formula
+    
+    return sorted(pmi_scores.items(), key=lambda x: x[1], reverse=True)[:10]
+    #this is to sort the pmi scores in descending order and return the top 10
+ 
 
 def adjective_counts(doc):
     """Extracts the most common adjectives in a parsed document. Returns a list of tuples."""
-    adjectives = [token.lemma.lower() for token in doc if token.pos_ == "ADJ"]
+    adjectives = [token.lemma_.lower() for token in doc if token.pos_ == "ADJ"] #corrected missing _ in lemma_
     #this gets all the adjectives in the doc (makes it lowercase)
     return Counter(adjectives).most_common(10)  # return the top 10 common adjectives
-
-
-
 
 
 if __name__ == "__main__":
@@ -256,8 +266,9 @@ if __name__ == "__main__":
     uncomment the following lines to run the functions once you have completed them
     """
     path = Path.cwd() / "p1-texts" / "novels"
+    #this is to show the path to the novels folder
     print(path)
-    df = read_novels(path) # this line will fail until you have completed the read_novels function above.
+    df = read_novels(path) # this line will fail until you have completed the read_novels function above (done)
     print(df.head())
     nltk.download("cmudict")
     parse(df)
