@@ -73,7 +73,7 @@ def train_classifier_and_evaluate(X_train, X_test, Y_train, Y_test):
 
     #rf.fit(X_train, Y_train)
     #rf_pred = rf.predict(X_test)
-    #print(classification_report(Y_test, rf_pred, digits=3))
+    #print(classification_report(Y_test, rf_pred))
 
     #second model = SVM
     #svm = SVC(kernel='linear', random_state=26)
@@ -85,8 +85,8 @@ def train_classifier_and_evaluate(X_train, X_test, Y_train, Y_test):
         classifer.fit(X_train, Y_train)
         model_prediction = classifer.predict(X_test)
         print(f"Model Results for {model}: ")
-        print(classification_report(Y_test, model_prediction, digits=3))
-        print(f"Accuracy Score{accuracy_score(Y_test, model_prediction, digits=3)}")
+        print(classification_report(Y_test, model_prediction))
+        print(f"Accuracy Score{accuracy_score(Y_test, model_prediction)}")
         print(f"F1 Score{f1_score(Y_test, model_prediction, average="macro")}")
 
 
@@ -122,8 +122,8 @@ def use_n_grams(df):
         classifer.fit(X_train_ngrams, Y_train_ngrams)
         model_prediction = classifer.predict(X_test_ngrams)
         print(f"Model Results for {model}: ")
-        print(classification_report(Y_test_ngrams, model_prediction, digits=3))
-        print(f"NGrams Accuracy Score{accuracy_score(Y_test_ngrams, model_prediction, digits=3)}")
+        print(classification_report(Y_test_ngrams, model_prediction))
+        print(f"NGrams Accuracy Score{accuracy_score(Y_test_ngrams, model_prediction)}")
         print(f"NGrams F1 Score{f1_score(Y_test_ngrams, model_prediction, average='macro')}")
 
     #Part E: custom tokenizer for better performance
@@ -178,8 +178,8 @@ def custom_tokenizer_evaluation(df):
         classifer.fit(X_train_custom, Y_train_custom)
         model_prediction = classifer.predict(X_test_custom)
         print(f"Custom Model Results for {model}: ")
-        print(classification_report(Y_test_custom, model_prediction, digits=3))
-        print(f"Custom Accuracy Score{accuracy_score(Y_test_custom, model_prediction, digits=3)}")
+        print(classification_report(Y_test_custom, model_prediction))
+        print(f"Custom Accuracy Score{accuracy_score(Y_test_custom, model_prediction)}")
         print(f"Custom F1 Score{f1_score(Y_test_custom, model_prediction, average='macro')}")
 
 
