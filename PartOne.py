@@ -5,6 +5,7 @@
 import nltk
 import spacy
 from pathlib import Path
+
 import pandas as pd
 import os
 import pickle
@@ -62,12 +63,12 @@ def count_syl(word, d):
         int: The number of syllables in the word.
     """
     # check if the word is in the dictionary
-    word = word.lower() make it lowercase
+    word = word.lower() #make it lowercase
     
     if word in d:
         try: #this is for error handling for words not in the dictionary
             return len([p for p in d[word][0] if p[-1].isdigit()])  # count the number of syllables in the word
-        except KeyError:
+        except (KeyError, IndexError): #copilot suggested to add IndexError to handle cases where the word is not in the dictionary
             pass
     vowels = "aeiouy"  # define the vowels
     syllable_count = 0
@@ -80,10 +81,10 @@ def count_syl(word, d):
     for i in range(1, len(word)):
         #if the current letter is a vowel & the previous letter is not a vowel+ add one to the syllable count
         if word[i].lower() in vowels and word[i -1] not in vowels:
-            syllable_count += 1
+            syllable_count += 1 #this is to count the number of syllables in the word
         
         if syllable_count == 0:
-            syllable_count = 1
+            syllable_count = 1 #this is for words with no vowels (like mythS)
    
     return syllable_count  # return the syllable count for the word
     
@@ -113,7 +114,7 @@ def fk_level(text, d):
         total_syllables += count_syl(word, d) #loop each word + use count_syl 
 
     if total_words == 0 or total_sentences == 0:
-        return 0.0
+        return 0
     #this is to check if the text is empty/has no sentences
 
     #standard Flesch-Kincaid Grade Level formula
@@ -157,7 +158,7 @@ def nltk_ttr(text):
     #no words = TTR = 0
     words = [token for token in tokens if token.isalpha()]  # this is to keep only words (ignore punctuation and numbers)
     if not words:
-        return 0.0
+        return 0
     
     total_tokens = len(tokens)  # this is the number of tokens in the text
     
@@ -174,34 +175,42 @@ def get_ttrs(df):
     """helper function to add ttr to a dataframe"""
     results = {}
     for i, row in df.iterrows():
-        results[row["title"]] = nltk_ttr(row["text"])
+        results[row["title"]] = nltk_ttr(row["text"]) #this is for token type ratio for the rows
     return results
 
 
 def get_fks(df):
     """helper function to add fk scores to a dataframe"""
     results = {}
-    cmudict = nltk.corpus.cmudict.dict() #this is cmu dictionary from nltk
+    cmudict = nltk.corpus.cmudict.dict()  # load the cmudict dictionary for syllable counting
+
     for _, row in df.iterrows():
-        results[row["title"]] = round(fk_level(row["text"], cmudict), 4)
+        results[row["title"]] = round(fk_level(row["text"], cmudict), 3) 
+        #this is to round off fk score to 3.d.p
     return results
 
 
-def subjects_by_verb_pmi(doc, target_verb):
+def subjects_by_verb_pmi(doc, target_verb): #wrong function change!!!
     """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
     
     subject_verb_cooccurrences = Counter()
-    #make a list 
-    subjects = [] #this is to store the subjects found with the verb
-
-    #now loop all tokens in the parsed document
-    for token in doc: #tokem lemma similar to the word
+    for token in doc:
         if token.lemma_ == verb_lemma:
+            #for every token in the doc, check if token = verb
             for child in token.children:
-                if child.dep_ == "nsubj": #are the children in dependancy tree of the verb
-                    subject.append(child.lemma_.lower())  # adds subject to the list
-                    #this adds up the number of times a subject appears with the verb
-    return Counter(subjects).most_common(10)  # count top 10 subjects for the verb after running loop
+                if child.dep_ == "nsubj":
+                    #if the child is a subject of the verb, you got to add it to the list of subjects
+                    subject_verb_cooccurrences[child.lemma_.lower()] += 1
+                    #this is to count the number of times the subject is with the verb
+    
+    all_subjects_counts = Counter(token.lemma_.lower() for token in doc if token.dep_ == "nsubj")
+    #so you can ger total number of subjects in the doc
+    total_subjects = sum(all_subjects_counts.values())  
+    # this is the total number of subjects in the doc
+
+    X = sum(subject_verb_cooccurrences.values())  # total co-occurrences of the verb with subjects
+    if X == 0 or if total_subjects == 0:
+        return []
 
 
 def object_count(doc): #for question 1f
@@ -214,12 +223,12 @@ def object_count(doc): #for question 1f
 def subjects_by_verb_count(doc, verb):
     """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
     for token in doc:
-        if token.lemma_ == verb_lemma
+        if token.lemma_ == verb_lemma:
         #for every token in the doc, check if token = verb
-        for child in token.children:
-            if child.dep_ == "nsubj": #then its a subject of verb
+            for child in token.children:
+                if child.dep_ == "nsubj": #then its a subject of verb
                 #if the child is a subject of the verb, add it to the list of subjects
-                subjects.append(child.lemma_.lower())
+                    subjects.append(child.lemma_.lower())
     
     return Counter(subjects).most_common(10)  # this will return the top 10 common subjects for the verb
     
