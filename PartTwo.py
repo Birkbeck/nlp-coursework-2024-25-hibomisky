@@ -17,6 +17,8 @@ from sklearn.metrics import classification_report, accuracy_score, f1_score
 nltk.download('stopwords')
 nltk.download('wordnet')
 
+STOP_WORDS = set(stopwords.words('english'))
+
 #Part 2A - Data loading + cleaning
 def load_and_clean_data():
     # Load the csv file
@@ -137,8 +139,8 @@ def advanced_tokenizer(text):
 
     words = text.split()
 
-    stopwords = set(stopwords.words('english'))
-    words = [w for w in words if w not in stopwords]
+    words = [w for w in words if w not in STOP_WORDS]
+    #suggestion from copilot to change stopwords to a differenrt variable 
 
     #now lemmatize and convert it to root words like in class
     lemmatizer = WordNetLemmatizer()
