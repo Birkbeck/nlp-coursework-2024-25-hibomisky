@@ -209,14 +209,22 @@ def subjects_by_verb_pmi(doc, target_verb): #wrong function change!!!
     # this is the total number of subjects in the doc
 
     X = sum(subject_verb_cooccurrences.values())  # total co-occurrences of the verb with subjects
-    if X == 0 or if total_subjects == 0:
-        return []
-
+    if X == 0 or total_verb_occurences == 0:
+        return [] #no verbs/verbs with subjects, return empty list
+    
+    pmi_scores = {} #calcuating pmi scores for subjects
+    for subject, count in subject_verb_cooccurrences.items():
+        count_subject = all_subjects_counts[subject]  # count of the subject in the document
+        pmi = math.log2((count * len(doc)) / (X * count_subject))  # calculate the PMI score
+        pmi_scores[subject] = pmi  #this is storing pmi score for each of the subjects
+    
+    return sorted(pmi_scores.items(), key=lambda x: x[1], reverse=True)[:10]
+    #returning top 10 subjects with highest pmi scores
 
 def object_count(doc): #for question 1f
     #to find the most common objecys in parsed spacy doc
     objects = [token.lemma_.lower() for token in doc if token.dep_ == "doc_obj"]
-
+    #for every token in the doc, check if the token is a direct object
     return Counter(objects).most_common(10)  # this is top 10 common objects in the doc
 
 
@@ -240,7 +248,7 @@ def subjects_by_verb_count(doc, verb):
 def adjective_counts(doc):
     """Extracts the most common adjectives in a parsed document. Returns a list of tuples."""
     adjectives = [token.lemma.lower() for token in doc if token.pos_ == "ADJ"]
-
+    #this gets all the adjectives in the doc (makes it lowercase)
     return Counter(adjectives).most_common(10)  # return the top 10 common adjectives
 
 
@@ -251,18 +259,19 @@ if __name__ == "__main__":
     """
     uncomment the following lines to run the functions once you have completed them
     """
-    #path = Path.cwd() / "p1-texts" / "novels"
-    #print(path)
-    #df = read_novels(path) # this line will fail until you have completed the read_novels function above.
-    #print(df.head())
-    #nltk.download("cmudict")
-    #parse(df)
-    #print(df.head())
-    #print(get_ttrs(df))
-    #print(get_fks(df))
-    #df = pd.read_pickle(Path.cwd() / "pickles" /"name.pickle")
-    # print(adjective_counts(df))
-    """ 
+    path = Path.cwd() / "p1-texts" / "novels"
+    print(path)
+    df = read_novels(path) # this line will fail until you have completed the read_novels function above.
+    print(df.head())
+    nltk.download("cmudict")
+    parse(df)
+    print(df.head())
+    print(get_ttrs(df))
+    print(get_fks(df))
+    df = pd.read_pickle(Path.cwd() / "pickles" /"name.pickle")
+    print(adjective_counts(df))
+    
+     
     for i, row in df.iterrows():
         print(row["title"])
         print(subjects_by_verb_count(row["parsed"], "hear"))
@@ -272,5 +281,5 @@ if __name__ == "__main__":
         print(row["title"])
         print(subjects_by_verb_pmi(row["parsed"], "hear"))
         print("\n")
-    """
+
 
