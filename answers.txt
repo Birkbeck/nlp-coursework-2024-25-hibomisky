@@ -1,1 +1,5 @@
 Answers to the text questions go here.
+Q1 (d): When is the Flesch Kincaid score *not* a valid, robust or reliable estimator of 4
+text difficulty? Give two conditions. (Text answer, 200 words maximum).
+
+A1 (d): The reason that its not a valid estimator is because

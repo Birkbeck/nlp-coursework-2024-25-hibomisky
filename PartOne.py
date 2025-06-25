@@ -25,39 +25,45 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
 
     for file_path in path.glob("*.txt"):  # only care about .txt files
         if file_path.suffix == ".txt":
-            filename_parts = file_path.stem.split('-')  # remove the .txt part of the filename
-            #split filename with - like the way the filenames are
-                #corrected "_" to '-' syntax issues
+            try:
+                filename_parts = file_path.stem.split('-')  # remove the .txt part of the filename
+                #split filename with - like the way the filenames are
+                    #corrected "_" to '-' syntax issues
 
-            if len(filename_parts) == 3:
-                title, author, year = filename_parts  # if there are 3 parts, then title, author, year
-                #added this to make it clearer that the filename is split into 3 parts
-                year = int(year.strip())  # convert year to an integer and remove any whitespace
-            else:
-                print("This file does not have the correct format:", file_path)
-                continue  # skip this file if it does not have the correct format
+                if len(filename_parts) == 3:
+                    title, author, year = filename_parts  # if there are 3 parts, then title, author, year
+                    #added this to make it clearer that the filename is split into 3 parts
+                    year = int(year.strip())  # convert year to an integer and remove any whitespace
+                else:
+                    print("This file does not have the correct format:", file_path)
+                #year = int(filename_parts[-1])  # year is the number at the end of the filename
 
-            #year = int(filename_parts[-1])  # year is the number at the end of the filename
-
-            #author = filename_parts[-2]  # author is the second to last part
-            # this is to get the author name, which is the second to last part of the filename
-            #title is allowed to have - 
-            #title = "-".join(filename_parts[:-2])  # title is whatever is left in the filename
-            # this is to join the rest of the filename parts with - to get the title
-            
-            # open and read the text file in the novel folder
-            with open(file_path, "r", encoding="utf-8") as f: #copilot suggested to use utf-8 encoding
-                # this is to read the file in utf-8 encoding which is standard for text files apaprently
-                text = f.read()
-                # make a dictionary of the novel data to add to the empty list
-            novels_data.append({
-                "title": title,
-                "author": author,
-                "year": year,
-                "text": text
-            })
-        # this is the end of the loop + make a pandas dataframe       
+                #author = filename_parts[-2]  # author is the second to last part
+                # this is to get the author name, which is the second to last part of the filename
+                #title is allowed to have - 
+                #title = "-".join(filename_parts[:-2])  # title is whatever is left in the filename
+                # this is to join the rest of the filename parts with - to get the title
+                
+                # open and read the text file in the novel folder
+                with open(file_path, "r", encoding="utf-8") as f: #copilot suggested to use utf-8 encoding
+                    # this is to read the file in utf-8 encoding which is standard for text files apaprently
+                    text = f.read()
+                    # make a dictionary of the novel data to add to the empty list
+                novels_data.append({
+                    "title": title,
+                    "author": author,
+                    "year": year,
+                    "text": text
+                })
+            # this is the end of the loop + make a pandas dataframe  
+            except Exception as e:
+                print(f"Error reading file {file_path}: {e}") #suggested by copilot
+                # this is to catch any errors that occur while reading the file and print the error message     
     df = pd.DataFrame(novels_data)
+
+    if df.empty:
+        print("No novels found in the specified directory.")
+        return df
 
 
     df["year"] = pd.to_numeric(df["year"], errors="coerce")  # convert year to numeric (copilot suggested this)
@@ -270,18 +276,27 @@ def subjects_by_verb_pmi(doc, target_verb):
     #this is to sort the pmi scores in descending order and return the top 10
  
 
-def adjective_counts(doc):
+def adjective_counts(doc): #changed to doc
     """Extracts the most common adjectives in a parsed document. Returns a list of tuples."""
-    adjectives = [token.lemma_.lower() for token in doc if token.pos_ == "ADJ"] #corrected missing _ in lemma_
-    #this gets all the adjectives in the doc (makes it lowercase)
-    return Counter(adjectives).most_common(10)  # return the top 10 common adjectives
+    
+    df = doc
+
+    all_adjectives = [] #different logic to try to stop issues in main function
+    #this is to store all the adjectives in the doc
+
+    for single_doc in doc['parsed']: #loop for each parsed doc in the DataFrame (df changed to doc)
+            for token in single_doc:
+                if token.pos_ == "ADJ":  # check if the token is an adjective
+                    all_adjectives.append(token.lemma_.lower())
+    
+    return Counter(all_adjectives).most_common(10)  # return the top 10 common adjectives
 
 
 if __name__ == "__main__":
     """
     uncomment the following lines to run the functions once you have completed them
     """
-    path = Path.cwd() / "p1-texts" / "novels"
+    path = Path.cwd() / "novels"
     #this is to show the path to the novels folder
     print(path)
     df = read_novels(path) # this line will fail until you have completed the read_novels function above (done)
@@ -291,7 +306,7 @@ if __name__ == "__main__":
     print(df.head())
     print(get_ttrs(df))
     print(get_fks(df))
-    df = pd.read_pickle(Path.cwd() / "pickles" /"name.pickle")
+    df = pd.read_pickle(Path.cwd() / "pickles" /"parsed.pickle")
     print(adjective_counts(df))
     
      
