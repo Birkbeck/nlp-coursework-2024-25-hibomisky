@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score, f1_score
 
 #download the nltk resources
 nltk.download('stopwords')
@@ -68,24 +68,28 @@ def vectorize_and_split_speech_data(df):
 def train_classifier_and_evaluate(X_train, X_test, Y_train, Y_test):
     #this trains the model + gives us the performance reports
 
-    rf = RandomForestClassifier(n_estimators = 300, random_state = 26) #300 RandomForests
+    all_classifiers = {'random forest': RandomForestClassifier(n_estimators = 300, random_state = 26),
+                       'SVM': SVC(kernel='linear', random_state=26)}
 
-    rf.fit(X_train, Y_train)
-    rf_pred = rf.predict(X_test)
-
-
-    print("Random Forest Performance")
-
-    print(classification_report(Y_test, rf_pred, digits=3))
+    #rf.fit(X_train, Y_train)
+    #rf_pred = rf.predict(X_test)
+    #print(classification_report(Y_test, rf_pred, digits=3))
 
     #second model = SVM
-    svm = SVC(kernel='linear', random_state=26)
-    svm.fit(X_train, Y_train)
-    svm_pred = svm.predict(X_test)
+    #svm = SVC(kernel='linear', random_state=26)
+    #svm.fit(X_train, Y_train)
+    #svm_pred = svm.predict(X_test)
+    #print("SVM performance")
 
-    print("SVM performance")
+    for model, classifer in all_classifiers.items():
+        classifer.fit(X_train, Y_train)
+        model_prediction = classifer.predict(X_test)
+        print(f"Model Results for {model}: ")
+        print(classification_report(Y_test, model_prediction, digits=3))
+        print(f"Accuracy Score{accuracy_score(Y_test, model_prediction, digits=3)}")
+        print(f"F1 Score{f1_score(Y_test, model_prediction, average="macro")}")
 
-    print(classification_report(Y_test, svm_pred, digits=3))
+
 
 #Part D: Improve with the N-Grams
 
@@ -108,7 +112,19 @@ def use_n_grams(df):
 
     #check model again with ngrams
     print("Performance with ngrams")
-    train_classifier_and_evaluate(X_train_ngrams, X_test_ngrams, Y_train_ngrams, Y_test_ngrams)
+    #train_classifier_and_evaluate(X_train_ngrams, X_test_ngrams, Y_train_ngrams, Y_test_ngrams)
+
+    all_classifiers = {'random forest': RandomForestClassifier(n_estimators = 300, random_state = 26),
+                       'SVM': SVC(kernel='linear', random_state=26)}
+
+
+    for model, classifer in all_classifiers.items():
+        classifer.fit(X_train_ngrams, Y_train_ngrams)
+        model_prediction = classifer.predict(X_test_ngrams)
+        print(f"Model Results for {model}: ")
+        print(classification_report(Y_test_ngrams, model_prediction, digits=3))
+        print(f"NGrams Accuracy Score{accuracy_score(Y_test_ngrams, model_prediction, digits=3)}")
+        print(f"NGrams F1 Score{f1_score(Y_test_ngrams, model_prediction, average='macro')}")
 
     #Part E: custom tokenizer for better performance
 
@@ -152,15 +168,19 @@ def custom_tokenizer_evaluation(df):
         stratify=Y
     )
 
-    #best model only - SVM
-    svm_model = SVC(kernel='linear', random_state=26)
-    svm_model.fit(X_train_custom, Y_train_custom)
-    svm_pred = svm_model.predict(X_test_custom)
+    #Custom tokeniser for all classiferrs
 
-    print("SVM Custom Tokeniser performance:")
-    print(classification_report(Y_test_custom, svm_pred, digits=3))
+    all_classifiers = {'random forest': RandomForestClassifier(n_estimators = 300, random_state = 26),
+                        'SVM': SVC(kernel='linear', random_state=26)}
 
-    return svm_pred 
+
+    for model, classifer in all_classifiers.items():
+        classifer.fit(X_train_custom, Y_train_custom)
+        model_prediction = classifer.predict(X_test_custom)
+        print(f"Custom Model Results for {model}: ")
+        print(classification_report(Y_test_custom, model_prediction, digits=3))
+        print(f"Custom Accuracy Score{accuracy_score(Y_test_custom, model_prediction, digits=3)}")
+        print(f"Custom F1 Score{f1_score(Y_test_custom, model_prediction, average='macro')}")
 
 
 #MAIN
