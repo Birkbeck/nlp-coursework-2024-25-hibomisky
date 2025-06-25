@@ -2,4 +2,10 @@ Answers to the text questions go here.
 Q1 (d): When is the Flesch Kincaid score *not* a valid, robust or reliable estimator of 4
 text difficulty? Give two conditions. (Text answer, 200 words maximum).
 
-A1 (d): The reason that its not a valid estimator is because
+A1 (d): The reason that its not a valid estimator is because its a formular that does not understand the meaning of the wo.rds.
+It can fail if the text has a lot of technical jargon such a medical peer reviewed journals with lots of long medical words (neurooncological)
+A clinican has no issues reading those words but the formula thinks its a diffuclt word due to how long it is
+
+The second reason it doesn't work well is because it struggles with docuements that have complex concepts such as love poem or a philosophy book
+Some book/poems etc might use short everyday words but the context and the emotional depth is complicated and hard to understand so the formular struggles.
+The score measures word/sentene length (simple metrics) and not deep/abstract ideas.
