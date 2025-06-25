@@ -9,3 +9,25 @@ A clinican has no issues reading those words but the formula thinks its a diffuc
 The second reason it doesn't work well is because it struggles with docuements that have complex concepts such as love poem or a philosophy book
 Some book/poems etc might use short everyday words but the context and the emotional depth is complicated and hard to understand so the formular struggles.
 The score measures word/sentene length (simple metrics) and not deep/abstract ideas.
+
+
+Q2 (f): my custom tokeniser makes the text cleaner by removing special charaters like numbers (covid19 becomes covid for example) using RegEx
+It also makes all text lowercase (NHS becomes nhs for example)
+Stopword removal also takes out common words like the/and/it etc
+It uses WordNetLemmantizer which breaks words down to their root (like running turns to run)
+this reduces noise and standardises words to their core roots
+
+PERFORMANCE:
+tokenizer improved SVM macro F1 score from 0.605 to 0.609 (tiny difference!)
+tokenizer reduced SVM accruacy from 0.812 to 0.805
+svm classifers had the highest accuracy with ngrams one having a score 0.817 compared to custom tokenizer accuracy (only 0.805) and baseline svm  (0.812)
+custom svm had best class balance with highest macro F1 scores (0.609) compared to ngrams svm (only 0.600) and baseline svm  (0.605)
+
+there is a class imbalance issue in the dataset for the lib dems (they only had 54 samples)
+also there's poor minority class performance for lib dems (f1 scoere 0.16)
+this cuases a high false positive for lib dems in custom svm (4.8% recall)
+
+To fix this you could use SMOTE (synthetic minority oversampling) before training
+it makes fake minority samples and balances existing data without losing infomation
+it works very well with TF IDF, apple after vectorization but before training
+it eould crate a better politically representative classifier and keep high accuracy
