@@ -40,9 +40,6 @@ def load_and_clean_data():
     #get rid of shorter speeches
     df = df[df['speech'].str.len() > 1000] #nummber 1000 charaters
 
-    #now print the speeches in rows/columns
-    print("Clean DataFrame:", df.shape) 
-
     return df
 
 #Part 2B - Vecotrization + train/test split
@@ -88,8 +85,8 @@ def train_classifier_and_evaluate(X_train, X_test, Y_train, Y_test):
         model_prediction = classifer.predict(X_test)
         print(f"Model Results for {model}: ")
         print(classification_report(Y_test, model_prediction))
-        print(f"Accuracy Score{accuracy_score(Y_test, model_prediction)}")
-        print(f"F1 Score{f1_score(Y_test, model_prediction, average="macro")}")
+        print(f"Accuracy Score: {accuracy_score(Y_test, model_prediction)}")
+        print(f"F1 Score: {f1_score(Y_test, model_prediction, average='macro')}")
 
 
 
@@ -125,8 +122,8 @@ def use_n_grams(df):
         model_prediction = classifer.predict(X_test_ngrams)
         print(f"Model Results for {model}: ")
         print(classification_report(Y_test_ngrams, model_prediction))
-        print(f"NGrams Accuracy Score{accuracy_score(Y_test_ngrams, model_prediction)}")
-        print(f"NGrams F1 Score{f1_score(Y_test_ngrams, model_prediction, average='macro')}")
+        print(f"NGrams Accuracy Score: {accuracy_score(Y_test_ngrams, model_prediction)}")
+        print(f"NGrams F1 Score: {f1_score(Y_test_ngrams, model_prediction, average='macro')}")
 
     #Part E: custom tokenizer for better performance
 
@@ -182,7 +179,7 @@ def custom_tokenizer_evaluation(df):
         print(f"Custom Model Results for {model}: ")
         print(classification_report(Y_test_custom, model_prediction))
         print(f"Custom Accuracy Score{accuracy_score(Y_test_custom, model_prediction)}")
-        print(f"Custom F1 Score{f1_score(Y_test_custom, model_prediction, average='macro')}")
+        print(f"Custom F1 Score: {f1_score(Y_test_custom, model_prediction, average='macro')}")
 
 
 #MAIN
@@ -191,6 +188,11 @@ if __name__ == "__main__": #copied from partone.py becuase of errors when I type
 
     #A: first load/clean data
     df = load_and_clean_data()
+    #print(df.head(10)) #printing top 10 rows of data
+
+    #now print the speeches in rows/columns
+    print("Clean DataFrame:", df.shape) 
+
 
     #B: vectorization + split 
     X_train, X_test, Y_train, Y_test, vectorizer = vectorize_and_split_speech_data(df)
@@ -203,3 +205,4 @@ if __name__ == "__main__": #copied from partone.py becuase of errors when I type
 
     #E: custom tokenizer check final
     custom_tokenizer_evaluation(df)
+
