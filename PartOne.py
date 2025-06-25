@@ -23,8 +23,9 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
 
     for file_path in path.glob("*.txt"):  # only care about .txt files
         if file_path.suffix == ".txt":
-            filename_parts = file_path.stem.split("_")  # remove the .txt part of the filename
+            filename_parts = file_path.stem.split('_')  # remove the .txt part of the filename
             #split filename with - like the way the filenames are
+                #corrected "_" to '_' syntax issues
 
             year = int(filename_parts[-1])  # year is the number at the end of the filename
 
@@ -83,8 +84,13 @@ def count_syl(word, d):
         if word[i].lower() in vowels and word[i -1] not in vowels:
             syllable_count += 1 #this is to count the number of syllables in the word
         
-        if syllable_count == 0:
-            syllable_count = 1 #this is for words with no vowels (like mythS)
+    if len(word) > 1 and word.endswith("e"):
+        #for words that ends in e, +  word longer than 1 letter (like cake for example)
+        syllable_count -= 1  #remove silent e from syllable count
+        
+    if syllable_count == 0:
+        syllable_count = 1 #this is for words with no vowels (like mythS)
+        #word must have at least 1 syllable
    
     return syllable_count  # return the syllable count for the word
     
@@ -114,7 +120,7 @@ def fk_level(text, d):
         total_syllables += count_syl(word, d) #loop each word + use count_syl 
 
     if total_words == 0 or total_sentences == 0:
-        return 0
+        return 0.0 #corrected to be like float return type that is stanfard for Flesch-Kincaid Grade Level
     #this is to check if the text is empty/has no sentences
 
     #standard Flesch-Kincaid Grade Level formula
@@ -133,18 +139,21 @@ def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
 
     parsed_docs = []  # empty list to store all the parsed docs
 
-    for text in nlp.pipe(df['text'].tolist(), disable = ["ner"]):
+    for doc in nlp.pipe(df['text'].tolist(), disable = ["ner"]): #error not text but doc here
     # end of loop, add the parsed docs to the dataframe
         parsed_docs.append(doc) #doc now has the parsed text
 
     df['parsed'] = parsed_docs  # add the parsed docs to the dataframe
+    
     #say what the output file path is
     output_file_path = store_path / out_name  # this is where to find the output_file
+    
     #now savethe dataframe to a pickle file
     with open(output_file_path, "wb") as f: #this opens file 
         pickle.dump(df, f) #should see a df in the pickle file
 
-        return df  # return the dataframe with the parsed + saved docs
+    return df  # return the dataframe with the parsed + saved docs
+    #corrected indentation 
 
 
 
@@ -158,16 +167,15 @@ def nltk_ttr(text):
     #no words = TTR = 0
     words = [token for token in tokens if token.isalpha()]  # this is to keep only words (ignore punctuation and numbers)
     if not words:
-        return 0
+        return 0.0 #for float return type to be consistent
     
-    total_tokens = len(tokens)  # this is the number of tokens in the text
+    total_words = len(words)  # this is the total number of words in the text
     
     total_types = len(set(words))  # this is the number of unique words in the text
 
-    return total_types / total_tokens  # return the type-token ratio (TTR) of the text
+    return total_types / total_words # return the type-token ratio (TTR) of the text
+    #this is corrected as TTR is words divided by types, not the other way around
 
-
-        #need to define words and total_sentences
 
 
 
@@ -189,43 +197,31 @@ def get_fks(df):
         #this is to round off fk score to 3.d.p
     return results
 
-
-def subjects_by_verb_pmi(doc, target_verb): #wrong function change!!!
-    """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
-    
-    subject_verb_cooccurrences = Counter()
-    for token in doc:
-        if token.lemma_ == verb_lemma:
-            #for every token in the doc, check if token = verb
-            for child in token.children:
-                if child.dep_ == "nsubj":
-                    #if the child is a subject of the verb, you got to add it to the list of subjects
-                    subject_verb_cooccurrences[child.lemma_.lower()] += 1
-                    #this is to count the number of times the subject is with the verb
-    
-    all_subjects_counts = Counter(token.lemma_.lower() for token in doc if token.dep_ == "nsubj")
-    #so you can ger total number of subjects in the doc
-    total_subjects = sum(all_subjects_counts.values())  
-    # this is the total number of subjects in the doc
-
-    X = sum(subject_verb_cooccurrences.values())  # total co-occurrences of the verb with subjects
-    if X == 0 or total_verb_occurences == 0:
-        return [] #no verbs/verbs with subjects, return empty list
-    
-    pmi_scores = {} #calcuating pmi scores for subjects
-    for subject, count in subject_verb_cooccurrences.items():
-        count_subject = all_subjects_counts[subject]  # count of the subject in the document
-        pmi = math.log2((count * len(doc)) / (X * count_subject))  # calculate the PMI score
-        pmi_scores[subject] = pmi  #this is storing pmi score for each of the subjects
-    
-    return sorted(pmi_scores.items(), key=lambda x: x[1], reverse=True)[:10]
-    #returning top 10 subjects with highest pmi scores
-
-def object_count(doc): #for question 1f
+def object_count(doc): 
     #to find the most common objecys in parsed spacy doc
-    objects = [token.lemma_.lower() for token in doc if token.dep_ == "doc_obj"]
+    objects = [token.lemma_.lower() for token in doc if token.dep_ == "dobj"]
+    #corrected to use "dobj" for direct objects instead of "doc_obj" because "doc_obj" is not standard label in spaCy
     #for every token in the doc, check if the token is a direct object
     return Counter(objects).most_common(10)  # this is top 10 common objects in the doc
+
+def subjects_by_verb_count(doc, verb): #moved fuction up for my own thinking cos it makes more sense
+    """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
+    subjects = []  # this is to store the subjects of the verb
+    for token in doc:
+        if token.lemma_ == verb:
+        #for every token in the doc, check if token = verb
+            for child in token.children:
+                if child.dep_ == "nsubj": #then its a subject of verb
+                #if the child is a subject of the verb, add it to the list of subjects
+                    subjects.append(child.lemma_.lower())
+    
+    return Counter(subjects).most_common(10)  # this will return the top 10 common subjects for the verb
+
+def subjects_by_verb_pmi(doc, target_verb): 
+    """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
+    
+ 
+
 
 
 def subjects_by_verb_count(doc, verb):
