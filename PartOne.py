@@ -11,6 +11,8 @@ import os
 import pickle
 import math
 
+from collections import Counter #added to count objects, subjects, and adjectives
+
 nlp = spacy.load("en_core_web_sm")
 nlp.max_length = 2000000 #cos the novels are long
 
@@ -23,30 +25,42 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
 
     for file_path in path.glob("*.txt"):  # only care about .txt files
         if file_path.suffix == ".txt":
-            filename_parts = file_path.stem.split('_')  # remove the .txt part of the filename
+            filename_parts = file_path.stem.split('-')  # remove the .txt part of the filename
             #split filename with - like the way the filenames are
-                #corrected "_" to '_' syntax issues
+                #corrected "_" to '-' syntax issues
 
-            year = int(filename_parts[-1])  # year is the number at the end of the filename
+            if len(filename_parts) == 3:
+                title, author, year = filename_parts  # if there are 3 parts, then title, author, year
+                #added this to make it clearer that the filename is split into 3 parts
+                year = int(year.strip())  # convert year to an integer and remove any whitespace
+            else:
+                print("This file does not have the correct format:", file_path)
+                continue  # skip this file if it does not have the correct format
 
-            author = filename_parts[-2]  # author is the second to last part
+            #year = int(filename_parts[-1])  # year is the number at the end of the filename
+
+            #author = filename_parts[-2]  # author is the second to last part
             # this is to get the author name, which is the second to last part of the filename
             #title is allowed to have - 
-            title = "-".join(filename_parts[:-2])  # title is whatever is left in the filename
+            #title = "-".join(filename_parts[:-2])  # title is whatever is left in the filename
             # this is to join the rest of the filename parts with - to get the title
             
             # open and read the text file in the novel folder
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, "r", encoding="utf-8") as f: #copilot suggested to use utf-8 encoding
+                # this is to read the file in utf-8 encoding which is standard for text files apaprently
                 text = f.read()
-            # make a dictionary of the novel data to add to the empty list
+                # make a dictionary of the novel data to add to the empty list
             novels_data.append({
                 "title": title,
                 "author": author,
                 "year": year,
                 "text": text
             })
-    # this is the end of the loop + make a pandas dataframe       
+        # this is the end of the loop + make a pandas dataframe       
     df = pd.DataFrame(novels_data)
+
+
+    df["year"] = pd.to_numeric(df["year"], errors="coerce")  # convert year to numeric (copilot suggested this)
     df.sort_values(by="year", inplace=True)  # sort the dataframe by year
     df.reset_index(drop=True, inplace=True)  # reset the index of the dataframe/delete old index
 
@@ -244,9 +258,11 @@ def subjects_by_verb_pmi(doc, target_verb):
     #now calcuate pmi scores for each subject
     pmi_scores = {}
 
-    for subject, count in subjects_verb_cooccrances.items():
+    for subject, count_cooccurrence in subjects_verb_cooccrances.items():
 
-        pmi = math.log2((count_subjects_verb_cooccrances[subject] * X) / (count * total_verb_subject_count))
+        count_subject_total = all_subject_counts[subject]
+        #added this to get the count of the subject in the doc correctly as previously not defined
+        pmi = math.log2((count_cooccurrence * X) / (count_subject_total * total_verb_subject_count))
         #this is to calculate the pmi score for each subject
         pmi_scores[subject] = pmi  # copitlot helped me wth line 249 formula
     
