@@ -146,14 +146,13 @@ def advanced_tokenizer(text):
     return words
 
 
-
-
 def custom_tokenizer_evaluation(df):
     #check the modesl with smart tokenizer/custom cleaning
 
     custom_vectorizer = TfidfVectorizer(
         stop_words = 'english',
         tokenizer = advanced_tokenizer,
+        ngram_range=(1,3), #seeing if it can get better results (copilot suggestion)
         max_features = 3000
     )
 

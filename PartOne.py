@@ -17,10 +17,8 @@ nlp = spacy.load("en_core_web_sm")
 nlp.max_length = 2000000 #cos the novels are long
 
 
-
 def read_novels(path=Path.cwd() / "texts" / "novels"):
-    """Reads texts from a directory of .txt files and returns a DataFrame with the text, title,
-    author, and year"""
+
     novels_data = []  # empty list to store novel data
 
     for file_path in path.glob("*.txt"):  # only care about .txt files
@@ -36,14 +34,7 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
                     year = int(year.strip())  # convert year to an integer and remove any whitespace
                 else:
                     print("This file does not have the correct format:", file_path)
-                #year = int(filename_parts[-1])  # year is the number at the end of the filename
 
-                #author = filename_parts[-2]  # author is the second to last part
-                # this is to get the author name, which is the second to last part of the filename
-                #title is allowed to have - 
-                #title = "-".join(filename_parts[:-2])  # title is whatever is left in the filename
-                # this is to join the rest of the filename parts with - to get the title
-                
                 # open and read the text file in the novel folder
                 with open(file_path, "r", encoding="utf-8") as f: #copilot suggested to use utf-8 encoding
                     # this is to read the file in utf-8 encoding which is standard for text files apaprently
@@ -73,16 +64,7 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
     return df
 
 def count_syl(word, d):
-    """Counts the number of syllables in a word given a dictionary of syllables per word.
-    if the word is not in the dictionary, syllables are estimated by counting vowel clusters
 
-    Args:
-        word (str): The word to count syllables for.
-        d (dict): A dictionary of syllables per word.
-
-    Returns:
-        int: The number of syllables in the word.
-    """
     # check if the word is in the dictionary
     word = word.lower() #make it lowercase
     
@@ -115,18 +97,9 @@ def count_syl(word, d):
     return syllable_count  # return the syllable count for the word
     
 def fk_level(text, d):
-    """Returns the Flesch-Kincaid Grade Level of a text (higher grade is more difficult).
-    Requires a dictionary of syllables per word.
 
-    Args:
-        text (str): The text to analyze.
-        d (dict): A dictionary of syllables per word.
-
-    Returns:
-        float: The Flesch-Kincaid Grade Level of the text. (higher grade is more difficult)
-    """
     #use NLTK word tokenizer to tokenize the text
-    
+
     sentences = nltk.sent_tokenize(text)  # tokenize the text into sentences
     total_sentences = len(sentences)  # total number of sentences in the text
     
@@ -148,10 +121,15 @@ def fk_level(text, d):
     fk_score = 0.39 * (total_words / total_sentences) + 11.8 * (total_syllables / total_words) - 15.59
     return fk_score  # return the Flesch-Kincaid Grade Level of the text
 
+def flesch_kincaid(df): #similar to nltk_ttr pattern
+    results = {}
+    cmudict = nltk.corpus.cmudict.dict() 
+    for _, row in df.iterrows():
+        results[row["title"]] = round(fk_level(row["text"], cmudict), 3)
+    return results #added extra to return dictionary as per questions
+
 
 def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
-    """Parses the text of a DataFrame using spaCy, stores the parsed docs as a column and writes 
-    the resulting  DataFrame to a pickle file"""
 
     #save pickle file or make a new one
     if not store_path.exists():
@@ -159,7 +137,7 @@ def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
 
     parsed_docs = []  # empty list to store all the parsed docs
 
-    for doc in nlp.pipe(df['text'].tolist(), disable = ["ner"]): #error not text but doc here
+    for doc in nlp.pipe(df['text'].tolist(), batch_size=50, disable = ["ner"]): #error not text but doc here
     # end of loop, add the parsed docs to the dataframe
         parsed_docs.append(doc) #doc now has the parsed text
 
@@ -176,39 +154,24 @@ def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
     #corrected indentation 
 
 
-
 def nltk_ttr(text):
-    """Calculates the type-token ratio of a text. Text is tokenized using nltk.word_tokenize."""
-
-    text = text.lower()  # convert text to lowercase letters cos coursework says ignore the case
-
-    tokens = nltk.word_tokenize(text)  # tokenize the text
-
-    #no words = TTR = 0
+    
+    text = text.lower()
+    tokens = nltk.word_tokenize(text)  # tokenize the text as per hint
     words = [token for token in tokens if token.isalpha()]  # this is to keep only words (ignore punctuation and numbers)
-    if not words:
-        return 0.0 #for float return type to be consistent
-    
-    total_words = len(words)  # this is the total number of words in the text
-    
-    total_types = len(set(words))  # this is the number of unique words in the text
-
-    return total_types / total_words # return the type-token ratio (TTR) of the text
-    #this is corrected as TTR is words divided by types, not the other way around
+    return len(set(words))/len(words) if words else 0.0
 
 
+def get_ttrs(df): #helper function
 
-
-def get_ttrs(df):
-    """helper function to add ttr to a dataframe"""
     results = {}
     for i, row in df.iterrows():
-        results[row["title"]] = nltk_ttr(row["text"]) #this is for token type ratio for the rows
+        results[row["title"]] = round(nltk_ttr(row["text"]),4) #this is for token type ratio for the rows
     return results
 
 
 def get_fks(df):
-    """helper function to add fk scores to a dataframe"""
+
     results = {}
     cmudict = nltk.corpus.cmudict.dict()  # load the cmudict dictionary for syllable counting
 
@@ -217,67 +180,95 @@ def get_fks(df):
         #this is to round off fk score to 3.d.p
     return results
 
-def object_count(doc): 
+def object_count(doc):
+
+    objects = []
+    for token in doc:
+        if token.dep in ["dobj", "pobj", "iobj", "obj"]:
+            #this is to check for all the object tags
+
+            objects.append(token.lemma_.lower())
     #to find the most common objecys in parsed spacy doc
-    objects = [token.lemma_.lower() for token in doc if token.dep_ == "dobj"]
-    #corrected to use "dobj" for direct objects instead of "doc_obj" because "doc_obj" is not standard label in spaCy
-    #for every token in the doc, check if the token is a direct object
     return Counter(objects).most_common(10)  # this is top 10 common objects in the doc
 
+def common_objects(doc):
+    return Counter(
+        token.lemma_.lower() for token in doc #lemma better
+        if token.dep_ in {"dobj", "pobj", "iobj"} #all object types
+    ).most_common(10) #trying this logic to see if it works
+
 def subjects_by_verb_count(doc, verb): #moved fuction up for my own thinking cos it makes more sense
-    """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
+
     subjects = []  # this is to store the subjects of the verb
     for token in doc:
         if token.lemma_ == verb:
+            if "hear" in token.lemma_.lower() and token.pos_ == "VERB":
+                #to fix the hear issue in main
         #for every token in the doc, check if token = verb
-            for child in token.children:
-                if child.dep_ == "nsubj": #then its a subject of verb
-                #if the child is a subject of the verb, add it to the list of subjects
-                    subjects.append(child.lemma_.lower())
-    
+                for child in token.children:
+                    if child.dep_ in ["nsubj","nsubjpass"]: #then its a subject of verb
+                    #if the child is a subject of the verb, add it to the list of subjects
+                        subjects.append(child.lemma_.lower())
+        
     return Counter(subjects).most_common(10)  # this will return the top 10 common subjects for the verb
 
 def subjects_by_verb_pmi(doc, target_verb): 
-    """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
+
     #first count total times subjects appears with target verb in doc
-    subjects_verb_cooccrances = Counter()
+    cooccrances_count = Counter()
+    all_subject_counts = Counter()
+    total_verb_subject_count = 0 #fixing counters
+
+
     for token in doc:
-        if token.lemma_ == target_verb:
+        if token.dep_ in ["nsubj", "nsubjpass"]: #active+passive
+        #if token.lemma_ == target_verb:
             #for every token in the doc, check if token = verb
-            for child in token.children:
-                if child.dep_ == "nsubj":
-                    subjects_verb_cooccrances[child.lemma_.lower()] += 1
-                    #so that the child is subject of the verb + add to list of subjects
-    
+            #for child in token.children:
+            all_subject_counts[token.lemma_.lower()] +=1
+
+        if token.lemma_.lower() == target_verb and token.pos_ == "VERB":
+            total_verb_subject_count += 1
+            
+            
     #second: get counts for all subject for any verb in the doc
-    all_subject_counts = Counter(token.lemma_.lower() for token in doc if token.dep_ == "nsubj")
+    for token in doc:
+        if token.lemma_.lower() == target_verb and token.pos_ == "VERB":
+            for child in token.children: #this is to find subjects in direct children - copilot suggestion
+                if child.dep_ in ["nsubj", "nsubjpass"]: #similar to above
+                    subject_lemma = child.lemma_.lower()
+                    cooccrances_count[subject_lemma] +=1
+            
 
-    #then count total times the target verb appears in the doc
-    total_verb_subject_count = sum(subjects_verb_cooccrances.values())
+    #now get total counts (changed variable name to stop confusion)
+    total_subjects_in_the_doc = sum(all_subject_counts.values())
 
-    #X = total number of subjects in the doc
-    X = sum(all_subject_counts.values())
-
-    if X == 0 or total_verb_subject_count == 0:
-        return []
+    if total_verb_subject_count == 0 or total_subjects_in_the_doc == 0:
+        return [] #total counts
     
     #now calcuate pmi scores for each subject
     pmi_scores = {}
 
-    for subject, count_cooccurrence in subjects_verb_cooccrances.items():
+    for subject, count_cooccurrence in cooccrances_count.items(): #getting confused ahhh/double check this
 
-        count_subject_total = all_subject_counts[subject]
+        count_subject_total = all_subject_counts.get(subject, 0)
         #added this to get the count of the subject in the doc correctly as previously not defined
-        pmi = math.log2((count_cooccurrence * X) / (count_subject_total * total_verb_subject_count))
         #this is to calculate the pmi score for each subject
-        pmi_scores[subject] = pmi  # copitlot helped me wth line 249 formula
+
+        if count_subject_total == 0:
+            continue
+
+        #pmi formular
+        pmi = math.log2((count_cooccurrence * total_subjects_in_the_doc) /
+                        (count_subject_total * total_verb_subject_count))
+        pmi_scores[subject] = pmi  
+
     
     return sorted(pmi_scores.items(), key=lambda x: x[1], reverse=True)[:10]
     #this is to sort the pmi scores in descending order and return the top 10
  
 
-def adjective_counts(doc): #changed to doc
-    """Extracts the most common adjectives in a parsed document. Returns a list of tuples."""
+def adjective_counts(doc): 
     
     df = doc
 
@@ -293,9 +284,8 @@ def adjective_counts(doc): #changed to doc
 
 
 if __name__ == "__main__":
-    """
-    uncomment the following lines to run the functions once you have completed them
-    """
+
+
     path = Path.cwd() / "novels"
     #this is to show the path to the novels folder
     print(path)
@@ -308,6 +298,7 @@ if __name__ == "__main__":
     print(get_fks(df))
     df = pd.read_pickle(Path.cwd() / "pickles" /"parsed.pickle")
     print(adjective_counts(df))
+    print(flesch_kincaid(df)) #added after extra function as per questions
     
      
     for i, row in df.iterrows():
@@ -320,4 +311,7 @@ if __name__ == "__main__":
         print(subjects_by_verb_pmi(row["parsed"], "hear"))
         print("\n")
 
-
+    for i, row in df.iterrows():
+        print(f"{row['title']} - common objects:" )
+        print(common_objects(row["parsed"]))
+       #print(df["parsed"].iloc[0]) #checking to see if its a spacy doc and not empty in terminal because i keep having bugs
